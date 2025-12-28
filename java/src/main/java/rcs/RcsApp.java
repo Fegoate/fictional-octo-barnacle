@@ -35,18 +35,22 @@ public class RcsApp extends JFrame {
     private final JTextField tgtLonField = new JTextField("-95.0");
     private final JTextField tgtAltField = new JTextField("10000.0");
 
-    private final JLabel geometryLabel = new JLabel("入射/散射方向：-");
+    private final JLabel directionLabel = new JLabel("入射/散射方向：-");
+    private final JLabel geometryLabel;
 
     private final RcsLineChartPanel lineChart = new RcsLineChartPanel();
     private final DirectionHeatmapPanel heatmap = new DirectionHeatmapPanel();
 
-    private final RcsCalculator calculator = new RcsCalculator(new SyntheticRcsModel());
+    private final RocketGeometry geometry = RocketGeometry.experimentDefaults();
+    private final RcsCalculator calculator = new RcsCalculator(new SyntheticRcsModel(geometry));
 
     public RcsApp() {
         super("双站 RCS 插值（Java 演示）");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(1200, 700));
+
+        this.geometryLabel = buildGeometryLabel();
 
         JPanel inputPanel = buildInputPanel();
         JPanel plots = new JPanel(new GridLayout(1, 2, 10, 10));
@@ -100,6 +104,10 @@ public class RcsApp extends JFrame {
         panel.add(compute);
 
         panel.add(Box.createVerticalStrut(10));
+        panel.add(directionLabel);
+
+        panel.add(Box.createVerticalStrut(10));
+        geometryLabel.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
         panel.add(geometryLabel);
 
         return panel;
@@ -117,6 +125,22 @@ public class RcsApp extends JFrame {
         p.add(field, BorderLayout.CENTER);
         field.setColumns(8);
         return p;
+    }
+
+    private JLabel buildGeometryLabel() {
+        String body = String.format("主体圆柱：轴向 %s，外半径 %.2f m，内半径 %.2f m，范围 %.2f–%.2f", 
+                geometry.mainBody().orientationAxis(), geometry.mainBody().outerRadius(),
+                geometry.mainBody().innerRadius(), geometry.mainBody().start(), geometry.mainBody().end());
+        String cone = String.format("顶部圆雉：轴向 %s，底半径 %.2f m，顶半径 %.2f m，范围 %.2f–%.2f",
+                geometry.noseCone().orientationAxis(), geometry.noseCone().bottomRadius(),
+                geometry.noseCone().topRadius(), geometry.noseCone().start(), geometry.noseCone().end());
+        String tail = String.format("尾部圆柱：轴向 %s，外半径 %.2f m，内半径 %.2f m，范围 %.2f–%.2f",
+                geometry.tailSection().orientationAxis(), geometry.tailSection().outerRadius(),
+                geometry.tailSection().innerRadius(), geometry.tailSection().start(), geometry.tailSection().end());
+
+        JLabel label = new JLabel("<html><b>目标几何（实验参数集）</b><br>" + body + "<br>" + cone + "<br>" + tail + "</html>");
+        label.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        return label;
     }
 
     private void updateResults() {
@@ -139,7 +163,7 @@ public class RcsApp extends JFrame {
                 parseDouble(tgtAltField.getText(), 10000.0));
 
         RcsCalculator.BistaticGeometry geom = calculator.geometry(tx, rx, tgt, attitude);
-        geometryLabel.setText(String.format("入射 az/el = %.1f/%.1f, 散射 az/el = %.1f/%.1f (deg)",
+        directionLabel.setText(String.format("入射 az/el = %.1f/%.1f, 散射 az/el = %.1f/%.1f (deg)",
                 geom.incidenceAzDeg(), geom.incidenceElDeg(), geom.scatterAzDeg(), geom.scatterElDeg()));
 
         RcsCalculator.SweepResult sweep = calculator.sweep(freqStart, freqStop, freqPoints,
