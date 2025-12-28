@@ -1,6 +1,16 @@
 package rcs;
 
 public class SyntheticRcsModel {
+    private final RocketGeometry geometry;
+
+    public SyntheticRcsModel() {
+        this(RocketGeometry.experimentDefaults());
+    }
+
+    public SyntheticRcsModel(RocketGeometry geometry) {
+        this.geometry = geometry;
+    }
+
     public double bistaticRcs(double freqGHz, double incidenceAzDeg, double incidenceElDeg,
                               double scatterAzDeg, double scatterElDeg) {
         double base = 10.0 + 5.0 * Math.sin(Math.toRadians(freqGHz * 12.0));
@@ -22,6 +32,10 @@ public class SyntheticRcsModel {
             }
         }
         return grid;
+    }
+
+    public RocketGeometry geometry() {
+        return geometry;
     }
 
     private double angularGain(double azDeg, double elDeg, double preferredAzDeg, double widthDeg) {
